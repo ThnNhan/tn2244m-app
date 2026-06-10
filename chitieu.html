@@ -26,8 +26,8 @@
 html,body{height:100%;height:100dvh;}
 body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',sans-serif;background:var(--bg);color:var(--text);max-width:430px;margin:0 auto;display:flex;flex-direction:column;overflow:hidden;}
 button{font-family:inherit;cursor:pointer;}
-#app-scroll{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;padding-top:env(safe-area-inset-top);}
-.bottom-nav{flex-shrink:0;width:100%;background:var(--surface);border-top:1px solid var(--border);display:flex;padding-bottom:env(safe-area-inset-bottom);}
+#app-scroll{position:fixed;top:0;left:0;right:0;bottom:0;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;padding-top:env(safe-area-inset-top);max-width:430px;margin:0 auto;}
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;width:100%;max-width:430px;margin:0 auto;background:var(--surface);border-top:1px solid var(--border);display:flex;z-index:100;padding-bottom:env(safe-area-inset-bottom);}
 .nav-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:10px 0 8px;background:none;border:none;color:var(--text3);font-size:10px;font-weight:500;}
 .nav-item.active{color:var(--teal);}
 .nav-item svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
@@ -423,8 +423,15 @@ const SEED_DEBTS = [
 // ── STATE ─────────────────────────────────────────────────────────────────────
 let wallets     = LS('wallets3') || SEED_WALLETS;
 let cats        = LS('cats3')    || SEED_CATS;
-let transactions= LS('txs3')    || SEED_TX;
-let debts       = LS('debts3')  || SEED_DEBTS;
+let transactions= LS('txs3')    || [
+  {id:1, name:'Bún bò',      amount:45000,  cat:'food',    wallet:'cash', date:'2026-06-09', note:''},
+  {id:2, name:'Grab về nhà', amount:35000,  cat:'transport',wallet:'cash',date:'2026-06-09', note:''},
+  {id:3, name:'Mua áo',      amount:150000, cat:'shop',    wallet:'bank', date:'2026-06-08', note:''},
+  {id:4, name:'Xăng xe',     amount:100000, cat:'gas',     wallet:'cash', date:'2026-06-07', note:''},
+];
+let debts       = LS('debts3')  || [
+  {id:1, person:'Minh', type:'lent', total:200000, paid:0, note:'Tiền ăn'},
+];
 // monthBudgets[key] = { total, cats:{catId:budget,...}, daily:{catId:daily,...} }
 let monthBudgets= LS('mb3')     || {};
 let curM = new Date().getMonth();
