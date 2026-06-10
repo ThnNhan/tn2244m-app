@@ -26,12 +26,12 @@
 html,body{height:100%;height:100dvh;}
 body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',sans-serif;background:var(--bg);color:var(--text);max-width:430px;margin:0 auto;display:flex;flex-direction:column;overflow:hidden;}
 button{font-family:inherit;cursor:pointer;}
-#app-scroll{position:fixed;top:0;left:0;right:0;bottom:0;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;padding-top:env(safe-area-inset-top);max-width:430px;margin:0 auto;}
+#app-scroll{position:fixed;top:0;left:0;right:0;bottom:0;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;padding-top:env(safe-area-inset-top);padding-bottom:calc(56px + env(safe-area-inset-bottom) + 16px);max-width:430px;margin:0 auto;}
 .bottom-nav{position:fixed;bottom:0;left:0;right:0;width:100%;max-width:430px;margin:0 auto;background:var(--surface);border-top:1px solid var(--border);display:flex;z-index:100;padding-bottom:env(safe-area-inset-bottom);}
 .nav-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:10px 0 8px;background:none;border:none;color:var(--text3);font-size:10px;font-weight:500;}
 .nav-item.active{color:var(--teal);}
 .nav-item svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
-.page{display:none;padding-bottom:80px;}
+.page{display:none;}
 .page.active{display:block;}
 .ph{padding:14px 16px 10px;background:var(--surface);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:50;}
 .ph h1{font-size:20px;font-weight:600;}
@@ -133,6 +133,24 @@ canvas#pieChart{display:block;margin:0 auto;}
 .empty p{font-size:14px;}
 /* wallet dot — dynamic color via inline style */
 .wdot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+/* wallet balance cards */
+.wallet-cards{display:flex;flex-direction:column;gap:8px;padding:0 16px 14px;}
+.wallet-bal-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:background .15s;}
+.wallet-bal-card:active{background:var(--surface2);}
+.wbal-ico{width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;}
+.wbal-info{flex:1;min-width:0;}
+.wbal-name{font-size:15px;font-weight:600;}
+.wbal-sub{font-size:11px;color:var(--text2);margin-top:2px;}
+.wbal-amount{text-align:right;}
+.wbal-val{font-size:17px;font-weight:700;}
+.wbal-val.neg{color:var(--red);}
+.wbal-label{font-size:10px;color:var(--text3);margin-top:2px;}
+/* adj history */
+.adj-item{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);}
+.adj-item:last-child{border-bottom:none;}
+.adj-meta{font-size:12px;color:var(--text2);margin-top:2px;}
+.adj-plus{color:var(--teal);font-weight:700;}
+.adj-minus{color:var(--red);font-weight:700;}
 </style>
 </head>
 <body>
@@ -153,9 +171,9 @@ canvas#pieChart{display:block;margin:0 auto;}
   </div>
   <div class="sum-grid">
     <div class="sum-card"><div class="lbl">Đã chi</div><div class="val red" id="total-spent">0 ₫</div></div>
-    <div class="sum-card"><div class="lbl">Còn lại</div><div class="val green" id="total-remain">0 ₫</div></div>
+    <div class="sum-card"><div class="lbl">Thu nhập</div><div class="val green" id="sum-income">0 ₫</div></div>
+    <div class="sum-card"><div class="lbl">NS còn lại</div><div class="val green" id="total-remain">0 ₫</div></div>
     <div class="sum-card"><div class="lbl">Ngân sách</div><div class="val amber" id="total-budget">0 ₫</div></div>
-    <div class="sum-card"><div class="lbl">Danh mục</div><div class="val" id="cat-count">0</div></div>
   </div>
   <div class="wallet-row" id="wallet-row"></div>
   <div class="sec-title">Ngân sách danh mục</div>
@@ -225,14 +243,46 @@ canvas#pieChart{display:block;margin:0 auto;}
 <div class="overlay" id="m-add">
   <div class="modal">
     <div class="mhandle"></div>
-    <h2>Thêm chi tiêu</h2>
-    <div class="fr"><label>Tên</label><input type="text" id="tx-name" placeholder="VD: Bún bò, Grab..."/></div>
-    <div class="fr"><label>Số tiền (₫)</label><input type="number" id="tx-amount" placeholder="45000" inputmode="numeric"/></div>
-    <div class="fr"><label>Danh mục</label><select id="tx-cat"></select></div>
-    <div class="fr"><label>Ví</label><div class="wsel" id="wallet-btns"></div></div>
-    <div class="fr"><label>Ngày</label><input type="date" id="tx-date"/></div>
-    <div class="fr"><label>Ghi chú (tuỳ chọn)</label><input type="text" id="tx-note" placeholder="VD: Mời anh mentor..."/></div>
-    <button class="btn-p" onclick="saveTx()">Lưu</button>
+    <div style="display:flex;gap:0;background:var(--surface2);border-radius:var(--radius-sm);padding:3px;margin-bottom:16px;">
+      <button id="tab-expense"  onclick="setTxMode('expense')"  style="flex:1;padding:8px;border:none;border-radius:8px;font-size:13px;font-weight:600;background:var(--red);color:white;cursor:pointer;transition:all .2s;">− Chi tiêu</button>
+      <button id="tab-income"   onclick="setTxMode('income')"   style="flex:1;padding:8px;border:none;border-radius:8px;font-size:13px;font-weight:600;background:transparent;color:var(--text2);cursor:pointer;transition:all .2s;">+ Thu nhập</button>
+      <button id="tab-transfer" onclick="setTxMode('transfer')" style="flex:1;padding:8px;border:none;border-radius:8px;font-size:13px;font-weight:600;background:transparent;color:var(--text2);cursor:pointer;transition:all .2s;">↔ Chuyển ví</button>
+    </div>
+
+    <!-- expense / income fields -->
+    <div id="tx-normal-fields">
+      <div class="fr"><label id="tx-name-label">Tên</label><input type="text" id="tx-name" placeholder="VD: Bún bò, Grab..."/></div>
+      <div class="fr"><label>Số tiền (₫)</label><input type="number" id="tx-amount" placeholder="45000" inputmode="numeric"/></div>
+      <div class="fr" id="tx-cat-row"><label>Danh mục</label><select id="tx-cat"></select></div>
+      <div class="fr" id="tx-income-cat-row" style="display:none;"><label>Loại thu nhập</label><select id="tx-income-cat">
+        <option value="salary">💼 Lương</option>
+        <option value="bonus">🎉 Thưởng</option>
+        <option value="freelance">💻 Freelance</option>
+        <option value="transfer">💸 Chuyển khoản nhận</option>
+        <option value="other_income">📥 Khác</option>
+      </select></div>
+      <div class="fr"><label>Ví</label><div class="wsel" id="wallet-btns"></div></div>
+      <div class="fr"><label>Ngày</label><input type="date" id="tx-date"/></div>
+      <div class="fr"><label>Ghi chú (tuỳ chọn)</label><input type="text" id="tx-note" placeholder="VD: Lương tháng 6..."/></div>
+    </div>
+
+    <!-- transfer fields -->
+    <div id="tx-transfer-fields" style="display:none;">
+      <div class="fr">
+        <label>Ví nguồn (trừ tiền)</label>
+        <div class="wsel" id="transfer-from-btns"></div>
+      </div>
+      <div style="text-align:center;font-size:20px;margin:-4px 0 10px;color:var(--text3);">↓</div>
+      <div class="fr">
+        <label>Ví đích (cộng tiền)</label>
+        <div class="wsel" id="transfer-to-btns"></div>
+      </div>
+      <div class="fr"><label>Số tiền (₫)</label><input type="number" id="transfer-amount" placeholder="500000" inputmode="numeric"/></div>
+      <div class="fr"><label>Ngày</label><input type="date" id="transfer-date"/></div>
+      <div class="fr"><label>Ghi chú (tuỳ chọn)</label><input type="text" id="transfer-note" placeholder="VD: Rút ATM, nạp MoMo..."/></div>
+    </div>
+
+    <button class="btn-p" id="tx-save-btn" onclick="saveTx()">Lưu</button>
     <button class="btn-s" onclick="closeAll()" style="width:100%;margin-top:8px;">Huỷ</button>
   </div>
 </div>
@@ -288,11 +338,23 @@ canvas#pieChart{display:block;margin:0 auto;}
 <div class="overlay" id="m-budget">
   <div class="modal">
     <div class="mhandle"></div>
-    <h2 id="m-budget-title">Ngân sách tháng</h2>
+    <h2>Chỉnh ngân sách tháng</h2>
+    <div class="fr">
+      <label>Chọn tháng / năm</label>
+      <div style="display:flex;gap:8px;">
+        <select id="budget-month" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;font-size:15px;color:var(--text);font-family:inherit;outline:none;">
+          <option value="0">Tháng 1</option><option value="1">Tháng 2</option><option value="2">Tháng 3</option>
+          <option value="3">Tháng 4</option><option value="4">Tháng 5</option><option value="5">Tháng 6</option>
+          <option value="6">Tháng 7</option><option value="7">Tháng 8</option><option value="8">Tháng 9</option>
+          <option value="9">Tháng 10</option><option value="10">Tháng 11</option><option value="11">Tháng 12</option>
+        </select>
+        <input type="number" id="budget-year" style="width:90px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;font-size:15px;color:var(--text);font-family:inherit;outline:none;" min="2020" max="2099"/>
+      </div>
+    </div>
     <div class="fr">
       <label>Tổng ngân sách (₫)</label>
       <input type="number" id="budget-val" inputmode="numeric"/>
-      <p class="hint">Chỉ áp dụng cho tháng này. Tháng khác không bị ảnh hưởng.</p>
+      <p class="hint">Chỉ áp dụng cho tháng được chọn. Các tháng khác không bị ảnh hưởng.</p>
     </div>
     <button class="btn-p" onclick="saveTotalBudget()">Lưu</button>
     <button class="btn-s" onclick="closeAll()" style="width:100%;margin-top:8px;">Huỷ</button>
@@ -308,14 +370,27 @@ canvas#pieChart{display:block;margin:0 auto;}
     <div class="fr"><label>Tên</label><input type="text" id="ec-name"/></div>
     <div class="fr"><label>Icon (emoji)</label><input type="text" id="ec-icon" maxlength="2" style="width:80px;font-size:24px;text-align:center;"/></div>
     <div class="fr">
-      <label>Ngân sách tháng <span id="ec-month-label"></span> (₫)</label>
+      <label>Áp dụng ngân sách cho tháng</label>
+      <div style="display:flex;gap:8px;">
+        <select id="ec-month" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;font-size:15px;color:var(--text);font-family:inherit;outline:none;">
+          <option value="0">Tháng 1</option><option value="1">Tháng 2</option><option value="2">Tháng 3</option>
+          <option value="3">Tháng 4</option><option value="4">Tháng 5</option><option value="5">Tháng 6</option>
+          <option value="6">Tháng 7</option><option value="7">Tháng 8</option><option value="8">Tháng 9</option>
+          <option value="9">Tháng 10</option><option value="10">Tháng 11</option><option value="11">Tháng 12</option>
+        </select>
+        <input type="number" id="ec-year" style="width:90px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;font-size:15px;color:var(--text);font-family:inherit;outline:none;" min="2020" max="2099"/>
+      </div>
+      <p class="hint" style="margin-top:6px;">Thay đổi tên/icon áp dụng toàn bộ. Ngân sách chỉ áp dụng tháng được chọn.</p>
+    </div>
+    <div class="fr">
+      <label>Ngân sách tháng (₫)</label>
       <input type="number" id="ec-budget" inputmode="numeric" placeholder="0"/>
-      <p class="hint">Để 0 = không giới hạn. Chỉ áp dụng tháng này.</p>
+      <p class="hint">Để 0 = không giới hạn.</p>
     </div>
     <div class="fr">
       <label>Ngân sách mỗi ngày (₫) — tuỳ chọn</label>
       <input type="number" id="ec-daily" inputmode="numeric" placeholder="Để trống nếu không cần"/>
-      <p class="hint">Bật tính năng carry-forward dư/âm theo ngày.</p>
+      <p class="hint">Bật carry-forward dư/âm theo ngày.</p>
     </div>
     <button class="btn-p" onclick="saveEditCat()">Lưu</button>
     <button class="btn-s" onclick="closeAll()" style="width:100%;margin-top:8px;">Huỷ</button>
@@ -343,7 +418,60 @@ canvas#pieChart{display:block;margin:0 auto;}
   </div>
 </div>
 
-<!-- ADD WALLET MODAL -->
+<!-- WALLET BALANCE MODAL (detail + adjust) -->
+<div class="overlay" id="m-walletbal">
+  <div class="modal">
+    <div class="mhandle"></div>
+    <div id="wbal-header"></div>
+    <div style="display:flex;gap:8px;margin:14px 0;">
+      <button class="btn-p" onclick="openAdjModal('add')" style="flex:1;padding:10px;font-size:14px;background:var(--teal);">+ Nạp tiền</button>
+      <button class="btn-p" onclick="openAdjModal('sub')" style="flex:1;padding:10px;font-size:14px;background:var(--red);">− Rút / điều chỉnh</button>
+    </div>
+    <div style="font-size:12px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">Lịch sử điều chỉnh</div>
+    <div id="wbal-adj-hist"></div>
+    <button class="btn-s" onclick="closeAll()" style="width:100%;margin-top:14px;">Đóng</button>
+  </div>
+</div>
+
+<!-- ADJUST BALANCE MODAL -->
+<div class="overlay" id="m-adj">
+  <div class="modal">
+    <div class="mhandle"></div>
+    <h2 id="m-adj-title">Điều chỉnh số dư</h2>
+    <input type="hidden" id="adj-wallet-id"/>
+    <input type="hidden" id="adj-type"/>
+    <div class="fr">
+      <label id="adj-amount-label">Số tiền (₫)</label>
+      <input type="text" id="adj-amount" inputmode="numeric" placeholder="500.000"/>
+    </div>
+    <div class="fr">
+      <label>Lý do / ghi chú</label>
+      <input type="text" id="adj-note" placeholder="VD: Nạp lương, rút ATM, chỉnh số dư thực tế..."/>
+    </div>
+    <div class="fr">
+      <label>Ngày</label>
+      <input type="date" id="adj-date"/>
+    </div>
+    <button class="btn-p" onclick="saveAdj()">Lưu</button>
+    <button class="btn-s" onclick="openWalletBalModal(adjWalletId)" style="width:100%;margin-top:8px;">Huỷ</button>
+  </div>
+</div>
+
+<!-- SET INITIAL BALANCE MODAL -->
+<div class="overlay" id="m-initbal">
+  <div class="modal">
+    <div class="mhandle"></div>
+    <h2 id="m-initbal-title">Số dư ban đầu</h2>
+    <input type="hidden" id="ib-wallet-id"/>
+    <div class="fr">
+      <label>Số dư hiện tại của ví (₫)</label>
+      <input type="text" id="ib-amount" inputmode="numeric" placeholder="1.000.000"/>
+      <p class="hint">Nhập số tiền thực tế đang có trong ví này. App sẽ tự trừ khi bạn thêm chi tiêu.</p>
+    </div>
+    <button class="btn-p" onclick="saveInitBal()">Lưu</button>
+    <button class="btn-s" onclick="closeAll()" style="width:100%;margin-top:8px;">Huỷ</button>
+  </div>
+</div>
 <div class="overlay" id="m-addwallet">
   <div class="modal">
     <div class="mhandle"></div>
@@ -432,12 +560,39 @@ let transactions= LS('txs3')    || [
 let debts       = LS('debts3')  || [
   {id:1, person:'Minh', type:'lent', total:200000, paid:0, note:'Tiền ăn'},
 ];
+// walletAdj: manual balance adjustments
+// {id, walletId, type:'add'|'sub', amount, note, date}
+let walletAdj   = LS('walletAdj') || [];
+// walletInitBal: initial balances set by user
+// {walletId: amount}
+let walletInitBal = LS('walletInitBal') || { cash:0, bank:0, momo:0 };
+
+// Compute current balance of a wallet:
+// initialBalance + adjustments(add-sub) + income_tx - expense_tx
+function getWalletBalance(wid){
+  const init = walletInitBal[wid] || 0;
+  const adjSum = walletAdj.filter(a=>a.walletId===wid).reduce((s,a)=>{
+    return s + (a.type==='add' ? a.amount : -a.amount);
+  }, 0);
+  const spent  = transactions.filter(t=>t.wallet===wid && t.type!=='income').reduce((s,t)=>s+t.amount, 0);
+  const earned = transactions.filter(t=>t.wallet===wid && t.type==='income').reduce((s,t)=>s+t.amount, 0);
+  return init + adjSum + earned - spent;
+}
 // monthBudgets[key] = { total, cats:{catId:budget,...}, daily:{catId:daily,...} }
 let monthBudgets= LS('mb3')     || {};
 let curM = new Date().getMonth();
 let curY = new Date().getFullYear();
 let selWallet   = wallets[0]?.id || 'cash';
 let selColor    = '#1D9E75';
+let txMode      = 'expense'; // 'expense' | 'income'
+
+const INCOME_CATS = {
+  salary:       {name:'Lương',              icon:'💼'},
+  bonus:        {name:'Thưởng',             icon:'🎉'},
+  freelance:    {name:'Freelance',          icon:'💻'},
+  transfer:     {name:'Chuyển khoản nhận', icon:'💸'},
+  other_income: {name:'Thu nhập khác',      icon:'📥'},
+};
 
 const fmt = n => new Intl.NumberFormat('vi-VN',{style:'decimal'}).format(Math.round(n)).replace(/\./g,'.')+' ₫';
 const MONTHS = ['Tháng 1','Tháng 2','Tháng 3','Tháng 4','Tháng 5','Tháng 6','Tháng 7','Tháng 8','Tháng 9','Tháng 10','Tháng 11','Tháng 12'];
@@ -482,7 +637,7 @@ function setCatOverride(catId,m,y,budget,daily){
 
 // ── DATA HELPERS ──────────────────────────────────────────────────────────────
 function txInMonth(m,y){ return transactions.filter(t=>{const d=new Date(t.date);return d.getMonth()===m&&d.getFullYear()===y;}); }
-function catSpent(catId,txList){ return txList.filter(t=>t.cat===catId).reduce((s,t)=>s+t.amount,0); }
+function catSpent(catId,txList){ return txList.filter(t=>t.cat===catId&&t.type!=='income').reduce((s,t)=>s+t.amount,0); }
 function getCarry(catId,m,y){
   const daily=getCatDaily(catId,m,y);
   if(!daily) return null;
@@ -503,22 +658,34 @@ function renderHome(){
   const today=new Date();
   document.getElementById('today-date').textContent=`${today.getDate()}/${today.getMonth()+1}/${today.getFullYear()}`;
   const txList=txInMonth(curM,curY);
-  const totalSpent=txList.reduce((s,t)=>s+t.amount,0);
+  const totalSpent=txList.filter(t=>t.type!=='income').reduce((s,t)=>s+t.amount,0);
+  const totalIncome=txList.filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0);
   const totalBudget=getTotalBudget(curM,curY);
   const remain=totalBudget-totalSpent;
   document.getElementById('total-spent').textContent=fmt(totalSpent);
   document.getElementById('total-remain').textContent=fmt(remain);
   document.getElementById('total-remain').className='val '+(remain>=0?'green':'red');
   document.getElementById('total-budget').textContent=fmt(totalBudget);
-  document.getElementById('cat-count').textContent=cats.filter(c=>catSpent(c.id,txList)>0).length+' khoản';
+  const incCard = document.getElementById('sum-income');
+  if(incCard) incCard.textContent=fmt(totalIncome);
 
-  // wallet chips
-  const wtotals={};
-  txList.forEach(t=>{wtotals[t.wallet]=(wtotals[t.wallet]||0)+t.amount;});
-  document.getElementById('wallet-row').innerHTML=wallets
-    .filter(w=>wtotals[w.id])
-    .map(w=>`<div class="wallet-chip"><span class="wdot" style="background:${w.color}"></span>${w.icon} ${w.name}: <strong>${fmt(wtotals[w.id])}</strong></div>`)
-    .join('');
+  // wallet balance chips — scrollable, clickable to open detail
+  const totalAllWallets = wallets.reduce((s,w)=>s+getWalletBalance(w.id),0);
+  document.getElementById('wallet-row').innerHTML=
+    // total chip first
+    `<div class="wallet-chip" style="background:var(--teal-light);border-color:var(--teal);cursor:pointer;" onclick="openWalletBalModal('${wallets[0]?.id}')">
+      <span class="wdot" style="background:var(--teal)"></span>
+      <span style="color:var(--teal-dark);font-weight:600;">Tổng: <strong>${fmt(totalAllWallets)}</strong></span>
+    </div>`+
+    wallets.map(w=>{
+      const bal=getWalletBalance(w.id);
+      const hasInit=walletInitBal[w.id]!==undefined&&walletInitBal[w.id]!==0;
+      return `<div class="wallet-chip" style="cursor:pointer;${bal<0?'border-color:var(--red);':''}" onclick="openWalletBalModal('${w.id}')">
+        <span class="wdot" style="background:${w.color}"></span>
+        ${w.icon} ${w.name}: <strong style="${bal<0?'color:var(--red)':''}">${fmt(bal)}</strong>
+        ${!hasInit?'<span style="font-size:10px;">⚠️</span>':''}
+      </div>`;
+    }).join('');
 
   // category list — show ALL cats that have a budget OR have been spent in this month
   document.getElementById('cat-list').innerHTML=cats.map(cat=>{
@@ -569,11 +736,21 @@ function renderHistory(){
     const txs=groups[date];
     const d=new Date(date);
     const lbl=`${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()}`;
-    const dayTotal=txs.reduce((s,t)=>s+t.amount,0);
+    const daySpent=txs.filter(t=>t.type!=='income').reduce((s,t)=>s+t.amount,0);
+    const dayIncome=txs.filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0);
+    const dayNet = dayIncome - daySpent;
     return `<div>
-      <div class="day-lbl"><span>${lbl}</span><span style="color:var(--red)">${fmt(dayTotal)}</span></div>
+      <div class="day-lbl">
+        <span>${lbl}</span>
+        <span style="display:flex;gap:8px;align-items:center;">
+          ${dayIncome>0?`<span style="color:var(--teal)">+${fmt(dayIncome)}</span>`:''}
+          ${daySpent>0?`<span style="color:var(--red)">-${fmt(daySpent)}</span>`:''}
+        </span>
+      </div>
       ${txs.map(t=>{
-        const cat=catById(t.cat);
+        const isIncome = t.type==='income';
+        const cat = isIncome ? (INCOME_CATS[t.cat]||{name:'Thu nhập',icon:'📥'}) : catById(t.cat);
+        const catColor = isIncome ? '#E1F5EE' : catById(t.cat).color;
         const w=walletById(t.wallet);
         return `<div class="tx-wrap" id="wrap-${t.id}">
           <div class="tx-actions">
@@ -581,16 +758,17 @@ function renderHistory(){
             <button class="tx-act-del" onclick="deleteTx(${t.id})">Xoá</button>
           </div>
           <div class="tx-item" id="txrow-${t.id}" data-id="${t.id}">
-            <div class="tx-ico" style="background:${cat.color}">${cat.icon}</div>
+            <div class="tx-ico" style="background:${catColor}">${cat.icon}</div>
             <div class="tx-info">
               <div class="tx-name">${t.name}</div>
               <div class="tx-meta">
                 <span>${cat.name}</span>
+                ${isIncome?`<span class="wpill" style="background:var(--teal-light);color:var(--teal-dark);">Thu nhập</span>`:''}
                 <span class="wpill">${w.icon} ${w.name}</span>
                 ${t.note?`<span style="color:var(--text3);font-size:11px;">${t.note}</span>`:''}
               </div>
             </div>
-            <div class="tx-amt">-${fmt(t.amount)}</div>
+            <div class="tx-amt" style="${isIncome?'color:var(--teal)':''}">${isIncome?'+':'-'}${fmt(t.amount)}</div>
           </div>
         </div>`;
       }).join('')}
@@ -669,14 +847,23 @@ function renderSettings(){
   `;
 
   // wallets
-  document.getElementById('wallet-settings').innerHTML=wallets.map(w=>`
-    <div class="sr">
-      <div style="display:flex;align-items:center;gap:10px;">
-        <span style="width:28px;height:28px;border-radius:50%;background:${w.color};display:inline-flex;align-items:center;justify-content:center;font-size:14px;">${w.icon}</span>
-        <div><div class="sr-label">${w.name}</div></div>
+  document.getElementById('wallet-settings').innerHTML=wallets.map(w=>{
+    const bal = getWalletBalance(w.id);
+    const hasInit = walletInitBal[w.id] !== undefined && walletInitBal[w.id] !== 0;
+    return `<div class="sr">
+      <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0;">
+        <span style="width:32px;height:32px;border-radius:50%;background:${w.color};display:inline-flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;">${w.icon}</span>
+        <div style="min-width:0;">
+          <div class="sr-label">${w.name}</div>
+          <div class="sr-val" style="${bal<0?'color:var(--red)':''}">${fmt(bal)}</div>
+        </div>
       </div>
-      ${wallets.length>1?`<button class="sr-del" onclick="deleteWallet('${w.id}')">Xoá</button>`:''}
-    </div>`).join('');
+      <div style="display:flex;gap:6px;flex-shrink:0;">
+        <button class="sr-btn" onclick="openInitBalModal('${w.id}')" title="${hasInit?'Sửa số dư ban đầu':'Đặt số dư ban đầu'}">${hasInit?'Sửa số dư':'Đặt số dư'}</button>
+        ${wallets.length>1?`<button class="sr-del" onclick="deleteWallet('${w.id}')">Xoá</button>`:''}
+      </div>
+    </div>`;
+  }).join('');
 
   // cats
   document.getElementById('cat-settings').innerHTML=cats.map(cat=>{
@@ -795,7 +982,7 @@ function attachAmtInput(id){
   el.addEventListener('input',()=>fmtInput(el));
 }
 document.addEventListener('DOMContentLoaded',()=>{
-  ['tx-amount','etx-amount','nc-budget','nc-daily','ec-budget','ec-daily','budget-val'].forEach(id=>attachAmtInput(id));
+  ['tx-amount','etx-amount','nc-budget','nc-daily','ec-budget','ec-daily','budget-val','adj-amount','ib-amount'].forEach(id=>attachAmtInput(id));
 });
 
 // Add transaction
@@ -809,24 +996,89 @@ function selW(btn){
   btn.classList.add('active');
   selWallet=btn.dataset.wid;
 }
+// ── TX MODE TOGGLE ────────────────────────────────────────────────────────────
+function setTxMode(mode){
+  txMode = mode;
+  const tabs = {
+    expense:  {bg:'var(--red)',   label:'− Chi tiêu'},
+    income:   {bg:'var(--teal)',  label:'+ Thu nhập'},
+    transfer: {bg:'var(--blue)',  label:'↔ Chuyển ví'},
+  };
+  ['expense','income','transfer'].forEach(m=>{
+    const btn = document.getElementById('tab-'+m);
+    if(!btn) return;
+    const active = m===mode;
+    btn.style.background = active ? tabs[m].bg : 'transparent';
+    btn.style.color       = active ? 'white' : 'var(--text2)';
+  });
+
+  const isTransfer = mode==='transfer';
+  const isIncome   = mode==='income';
+  document.getElementById('tx-normal-fields').style.display   = isTransfer ? 'none' : '';
+  document.getElementById('tx-transfer-fields').style.display = isTransfer ? '' : 'none';
+  if(!isTransfer){
+    document.getElementById('tx-cat-row').style.display        = isIncome ? 'none' : '';
+    document.getElementById('tx-income-cat-row').style.display = isIncome ? '' : 'none';
+    document.getElementById('tx-name-label').textContent       = isIncome ? 'Tên thu nhập' : 'Tên chi tiêu';
+    document.getElementById('tx-name').placeholder             = isIncome ? 'VD: Lương tháng 6...' : 'VD: Bún bò, Grab...';
+  }
+}
+
+let selTransferFrom = '';
+let selTransferTo   = '';
+
+function buildTransferBtns(){
+  // from buttons
+  document.getElementById('transfer-from-btns').innerHTML = wallets.map(w=>
+    `<button class="wbtn${w.id===selTransferFrom?' active':''}" data-wid="${w.id}" onclick="selTransferFromW(this)">${w.icon} ${w.name}</button>`
+  ).join('');
+  // to buttons
+  document.getElementById('transfer-to-btns').innerHTML = wallets.map(w=>
+    `<button class="wbtn${w.id===selTransferTo?' active':''}" data-wid="${w.id}" onclick="selTransferToW(this)">${w.icon} ${w.name}</button>`
+  ).join('');
+}
+function selTransferFromW(btn){
+  document.querySelectorAll('#transfer-from-btns .wbtn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  selTransferFrom = btn.dataset.wid;
+}
+function selTransferToW(btn){
+  document.querySelectorAll('#transfer-to-btns .wbtn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  selTransferTo = btn.dataset.wid;
+}
+
 function openAddModal(){
   document.getElementById('tx-cat').innerHTML=cats.map(c=>`<option value="${c.id}">${c.icon} ${c.name}</option>`).join('');
   document.getElementById('tx-date').value=new Date().toISOString().split('T')[0];
+  document.getElementById('transfer-date').value=new Date().toISOString().split('T')[0];
   document.getElementById('tx-name').value='';
   document.getElementById('tx-amount').value='';
   document.getElementById('tx-note').value='';
-  selWallet=wallets[0]?.id||'cash';
+  document.getElementById('transfer-amount').value='';
+  document.getElementById('transfer-note').value='';
+  selWallet = wallets[0]?.id||'cash';
+  selTransferFrom = wallets[0]?.id||'cash';
+  selTransferTo   = wallets[1]?.id || wallets[0]?.id||'cash';
+  txMode='expense';
+  setTxMode('expense');
   buildWalletBtns();
+  buildTransferBtns();
   document.getElementById('m-add').classList.add('open');
 }
 function saveTx(){
   const name=document.getElementById('tx-name').value.trim();
   const amount=getRaw('tx-amount');
-  const cat=document.getElementById('tx-cat').value;
   const date=document.getElementById('tx-date').value;
   const note=document.getElementById('tx-note').value.trim();
   if(!name||!amount||!date){alert('Vui lòng điền đầy đủ tên, số tiền và ngày.');return;}
-  transactions.push({id:Date.now(),name,amount,cat,wallet:selWallet,date,note});
+  if(txMode==='income'){
+    const incomeCat=document.getElementById('tx-income-cat').value;
+    transactions.push({id:Date.now(),name,amount,cat:incomeCat,wallet:selWallet,date,note,type:'income'});
+  } else {
+    const cat=document.getElementById('tx-cat').value;
+    transactions.push({id:Date.now(),name,amount,cat,wallet:selWallet,date,note,type:'expense'});
+  }
   SS('txs3',transactions);closeAll();renderHome();
 }
 
@@ -890,13 +1142,17 @@ function markDebtDone(id){const d=debts.find(x=>x.id===id);if(!d)return;d.paid=d
 
 // Total budget
 function openBudgetModal(){
-  document.getElementById('m-budget-title').textContent=`Ngân sách tháng ${curM+1}/${curY}`;
-  document.getElementById('budget-val').value=getTotalBudget(curM,curY)?Number(getTotalBudget(curM,curY)).toLocaleString('vi-VN'):'';
+  document.getElementById('budget-month').value = curM;
+  document.getElementById('budget-year').value  = curY;
+  document.getElementById('budget-val').value   = getTotalBudget(curM,curY)?Number(getTotalBudget(curM,curY)).toLocaleString('vi-VN'):'';
   document.getElementById('m-budget').classList.add('open');
 }
 function saveTotalBudget(){
-  const v=getRaw('budget-val');
-  setTotalBudget(curM,curY,v);closeAll();renderSettings();renderHome();
+  const m = parseInt(document.getElementById('budget-month').value);
+  const y = parseInt(document.getElementById('budget-year').value);
+  const v = getRaw('budget-val');
+  if(!y||y<2020){alert('Năm không hợp lệ.');return;}
+  setTotalBudget(m,y,v);closeAll();renderSettings();renderHome();
 }
 
 // Edit cat
@@ -904,9 +1160,10 @@ function openEditCat(catId){
   const cat=catById(catId);
   document.getElementById('ec-id').value=catId;
   document.getElementById('m-editcat-title').textContent=`Sửa "${cat.name}"`;
-  document.getElementById('ec-month-label').textContent=`(T${curM+1}/${curY})`;
   document.getElementById('ec-name').value=cat.name;
   document.getElementById('ec-icon').value=cat.icon;
+  document.getElementById('ec-month').value=curM;
+  document.getElementById('ec-year').value=curY;
   document.getElementById('ec-budget').value=getCatBudget(catId,curM,curY)?Number(getCatBudget(catId,curM,curY)).toLocaleString('vi-VN'):'';
   document.getElementById('ec-daily').value=getCatDaily(catId,curM,curY)?Number(getCatDaily(catId,curM,curY)).toLocaleString('vi-VN'):'';
   document.getElementById('m-editcat').classList.add('open');
@@ -916,16 +1173,19 @@ function saveEditCat(){
   const cat=cats.find(c=>c.id===catId);if(!cat)return;
   const name=document.getElementById('ec-name').value.trim();
   const icon=document.getElementById('ec-icon').value.trim();
+  const m=parseInt(document.getElementById('ec-month').value);
+  const y=parseInt(document.getElementById('ec-year').value);
   const budget=getRaw('ec-budget');
   const daily=getRaw('ec-daily')||null;
+  if(!y||y<2020){alert('Năm không hợp lệ.');return;}
   if(name) cat.name=name;
   if(icon) cat.icon=icon;
-  // Update global default too
+  // Update global default
   cat.budget=budget;
   cat.dailyBudget=daily;
   SS('cats3',cats);
-  // Also save month-specific override so this month sees it immediately
-  setCatOverride(catId,curM,curY,budget,daily);
+  // Month-specific override for chosen month
+  setCatOverride(catId,m,y,budget,daily);
   closeAll();renderSettings();renderHome();
 }
 
@@ -977,9 +1237,116 @@ function saveNewWallet(){
   const icon=document.getElementById('nw-icon').value.trim()||'💳';
   const color=document.getElementById('nw-color').value||'#888';
   if(!name){alert('Vui lòng nhập tên ví.');return;}
-  wallets.push({id:'w'+Date.now(),name,icon,color});
-  SS('wallets3',wallets);closeAll();renderSettings();
+  const newId='w'+Date.now();
+  wallets.push({id:newId,name,icon,color});
+  // Don't set initial balance yet — prompt user from settings
+  SS('wallets3',wallets);closeAll();renderSettings();renderHome();
 }
+// ── WALLET BALANCE MODALS ────────────────────────────────────────────────────
+let adjWalletId = '';
+
+function openWalletBalModal(wid){
+  closeAll();
+  adjWalletId = wid;
+  const w = walletById(wid);
+  const bal = getWalletBalance(wid);
+  const totalSpent = transactions.filter(t=>t.wallet===wid).reduce((s,t)=>s+t.amount,0);
+  const hasInit = walletInitBal[wid] !== undefined;
+
+  document.getElementById('wbal-header').innerHTML=`
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:4px;">
+      <div style="width:48px;height:48px;border-radius:50%;background:${w.color}20;border:2px solid ${w.color};display:flex;align-items:center;justify-content:center;font-size:22px;">${w.icon}</div>
+      <div style="flex:1;">
+        <div style="font-size:18px;font-weight:700;">${w.name}</div>
+        <div style="font-size:12px;color:var(--text2);">Tổng đã chi: ${fmt(totalSpent)}</div>
+      </div>
+      <div style="text-align:right;">
+        <div style="font-size:20px;font-weight:700;color:${bal<0?'var(--red)':'var(--teal)'};">${fmt(bal)}</div>
+        <div style="font-size:10px;color:var(--text3);">SỐ DƯ HIỆN TẠI</div>
+      </div>
+    </div>
+    ${!hasInit?`<div style="background:var(--amber-light);border-radius:8px;padding:8px 12px;font-size:12px;color:var(--amber);margin-bottom:4px;">
+      ⚠️ Chưa đặt số dư ban đầu.
+      <button onclick="openInitBalModal('${wid}')" style="background:none;border:none;color:var(--amber);font-weight:700;font-size:12px;text-decoration:underline;cursor:pointer;padding:0;">Đặt ngay</button>
+    </div>`:''}
+  `;
+
+  // Adjustment history
+  const adjs = walletAdj.filter(a=>a.walletId===wid).sort((a,b)=>b.date.localeCompare(a.date)||b.id-a.id);
+  if(!adjs.length){
+    document.getElementById('wbal-adj-hist').innerHTML=`<div style="color:var(--text3);font-size:13px;text-align:center;padding:16px 0;">Chưa có điều chỉnh nào</div>`;
+  } else {
+    document.getElementById('wbal-adj-hist').innerHTML=adjs.map(a=>{
+      const d=new Date(a.date);
+      return `<div class="adj-item">
+        <div>
+          <div style="font-size:13px;font-weight:500;">${a.note||'Điều chỉnh số dư'}</div>
+          <div class="adj-meta">${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()} · ${a.type==='add'?'Nạp':'Rút/Điều chỉnh'}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span class="${a.type==='add'?'adj-plus':'adj-minus'}">${a.type==='add'?'+':'-'}${fmt(a.amount)}</span>
+          <button onclick="deleteAdj(${a.id})" style="background:none;border:none;color:var(--text3);font-size:16px;cursor:pointer;padding:0 4px;">×</button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+  document.getElementById('m-walletbal').classList.add('open');
+}
+
+function openAdjModal(type){
+  closeAll();
+  document.getElementById('adj-wallet-id').value = adjWalletId;
+  document.getElementById('adj-type').value = type;
+  document.getElementById('m-adj-title').textContent = type==='add' ? '+ Nạp tiền vào ví' : '− Rút tiền / Điều chỉnh';
+  document.getElementById('adj-amount-label').textContent = type==='add' ? 'Số tiền nạp (₫)' : 'Số tiền rút / chỉnh (₫)';
+  document.getElementById('adj-amount').value = '';
+  document.getElementById('adj-note').value = '';
+  document.getElementById('adj-date').value = new Date().toISOString().split('T')[0];
+  document.getElementById('m-adj').classList.add('open');
+}
+
+function saveAdj(){
+  const wid = document.getElementById('adj-wallet-id').value;
+  const type = document.getElementById('adj-type').value;
+  const amount = getRaw('adj-amount');
+  const note = document.getElementById('adj-note').value.trim();
+  const date = document.getElementById('adj-date').value;
+  if(!amount){alert('Vui lòng nhập số tiền.');return;}
+  walletAdj.push({id:Date.now(), walletId:wid, type, amount, note, date});
+  SS('walletAdj', walletAdj);
+  openWalletBalModal(wid);
+  renderHome();
+}
+
+function deleteAdj(id){
+  if(!confirm('Xoá điều chỉnh này?'))return;
+  const a = walletAdj.find(x=>x.id===id);
+  const wid = a?.walletId;
+  walletAdj = walletAdj.filter(x=>x.id!==id);
+  SS('walletAdj', walletAdj);
+  if(wid) openWalletBalModal(wid);
+  renderHome();
+}
+
+function openInitBalModal(wid){
+  closeAll();
+  adjWalletId = wid;
+  const w = walletById(wid);
+  document.getElementById('ib-wallet-id').value = wid;
+  document.getElementById('m-initbal-title').textContent = `Số dư ban đầu — ${w.icon} ${w.name}`;
+  document.getElementById('ib-amount').value = walletInitBal[wid] ? Number(walletInitBal[wid]).toLocaleString('vi-VN') : '';
+  document.getElementById('m-initbal').classList.add('open');
+}
+
+function saveInitBal(){
+  const wid = document.getElementById('ib-wallet-id').value;
+  const amount = getRaw('ib-amount');
+  walletInitBal[wid] = amount;
+  SS('walletInitBal', walletInitBal);
+  closeAll();
+  renderHome();
+}
+
 function deleteWallet(wid){
   if(wallets.length<=1){alert('Phải có ít nhất 1 ví.');return;}
   if(!confirm('Xoá ví này? Giao dịch thuộc ví này sẽ giữ nguyên nhưng ví sẽ không còn hiển thị.'))return;
