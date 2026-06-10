@@ -2,9 +2,9 @@
 <html lang="vi">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Chi Tiêu">
 <title>Chi Tiêu</title>
 <style>
@@ -23,15 +23,17 @@
   --teal-light:#04342C;--red-light:#4A1B0C;--amber-light:#412402;--blue-light:#042C53;
 }}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
-body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;max-width:430px;margin:0 auto;}
+html,body{height:100%;height:100dvh;}
+body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',sans-serif;background:var(--bg);color:var(--text);max-width:430px;margin:0 auto;display:flex;flex-direction:column;overflow:hidden;}
 button{font-family:inherit;cursor:pointer;}
-.bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;background:var(--surface);border-top:1px solid var(--border);display:flex;z-index:100;padding-bottom:env(safe-area-inset-bottom);}
+#app-scroll{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;padding-top:env(safe-area-inset-top);}
+.bottom-nav{flex-shrink:0;width:100%;background:var(--surface);border-top:1px solid var(--border);display:flex;padding-bottom:env(safe-area-inset-bottom);}
 .nav-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:10px 0 8px;background:none;border:none;color:var(--text3);font-size:10px;font-weight:500;}
 .nav-item.active{color:var(--teal);}
 .nav-item svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
-.page{display:none;padding:0 0 90px;}
+.page{display:none;padding-bottom:80px;}
 .page.active{display:block;}
-.ph{padding:16px 16px 10px;background:var(--surface);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:50;}
+.ph{padding:14px 16px 10px;background:var(--surface);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:50;}
 .ph h1{font-size:20px;font-weight:600;}
 .month-nav{display:flex;align-items:center;justify-content:space-between;margin-top:8px;}
 .month-nav button{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:6px 10px;font-size:13px;color:var(--text2);}
@@ -61,7 +63,7 @@ button{font-family:inherit;cursor:pointer;}
 .cbadge{padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;}
 .cp{background:var(--teal-light);color:var(--teal-dark);}
 .cm{background:var(--red-light);color:var(--red);}
-.fab{position:fixed;bottom:calc(64px + env(safe-area-inset-bottom));right:16px;z-index:99;}
+.fab{position:fixed;bottom:calc(56px + env(safe-area-inset-bottom) + 14px);right:max(16px, env(safe-area-inset-right));z-index:99;}
 .fab button{width:52px;height:52px;border-radius:50%;background:var(--teal);border:none;color:white;font-size:26px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(29,158,117,.35);}
 .hist-list{padding:12px 16px;display:flex;flex-direction:column;gap:6px;}
 .day-lbl{font-size:12px;font-weight:600;color:var(--text3);padding:6px 0;text-transform:uppercase;letter-spacing:.4px;display:flex;justify-content:space-between;}
@@ -111,8 +113,8 @@ canvas#pieChart{display:block;margin:0 auto;}
 .sr-del{background:none;border:1px solid var(--border);border-radius:var(--radius-sm);padding:5px 8px;font-size:12px;color:var(--red);}
 .add-row-btn{width:100%;padding:12px;background:none;border:1.5px dashed var(--border);border-radius:var(--radius);font-size:14px;color:var(--teal);font-weight:500;margin-top:8px;}
 /* overlay / modal */
-.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;align-items:flex-end;justify-content:center;}
-.overlay.open{display:flex;}
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;align-items:flex-end;justify-content:center;pointer-events:none;}
+.overlay.open{display:flex;pointer-events:auto;}
 .modal{background:var(--surface);border-radius:20px 20px 0 0;width:100%;max-width:430px;padding:20px 16px calc(20px + env(safe-area-inset-bottom));max-height:92vh;overflow-y:auto;}
 .mhandle{width:36px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 16px;}
 .modal h2{font-size:17px;font-weight:600;margin-bottom:16px;}
@@ -134,6 +136,7 @@ canvas#pieChart{display:block;margin:0 auto;}
 </style>
 </head>
 <body>
+<div id="app-scroll">
 
 <!-- HOME -->
 <div class="page active" id="page-home">
@@ -197,6 +200,8 @@ canvas#pieChart{display:block;margin:0 auto;}
 <!-- FAB -->
 <div class="fab"><button onclick="openAddModal()" aria-label="Thêm">+</button></div>
 
+</div><!-- end app-scroll -->
+
 <!-- NAV -->
 <nav class="bottom-nav">
   <button class="nav-item active" onclick="switchPage('home',this)">
@@ -246,6 +251,16 @@ canvas#pieChart{display:block;margin:0 auto;}
     <div class="fr"><label>Ghi chú (tuỳ chọn)</label><input type="text" id="etx-note" placeholder="VD: Mời anh mentor..."/></div>
     <button class="btn-p" onclick="saveEditTx()">Lưu</button>
     <button class="btn-s" onclick="closeAll()" style="width:100%;margin-top:8px;">Huỷ</button>
+  </div>
+</div>
+
+<!-- CAT HISTORY MODAL -->
+<div class="overlay" id="m-cathist">
+  <div class="modal" style="max-height:85vh;display:flex;flex-direction:column;">
+    <div class="mhandle"></div>
+    <div id="cathist-header" style="flex-shrink:0;padding-bottom:12px;border-bottom:1px solid var(--border);margin-bottom:12px;"></div>
+    <div id="cathist-list" style="overflow-y:auto;flex:1;"></div>
+    <button class="btn-s" onclick="closeAll()" style="width:100%;margin-top:12px;flex-shrink:0;">Đóng</button>
   </div>
 </div>
 
@@ -514,7 +529,7 @@ function renderHome(){
         :`<span class="cbadge cm">-${fmt(Math.abs(carry))} âm</span>`;
       extra=`<div class="carry-row">${fmt(daily)}/ngày · ${badge}</div>`;
     }
-    return `<div class="cat-card">
+    return `<div class="cat-card" onclick="openCatHistory('${cat.id}')" style="cursor:pointer;">
       <div class="cat-hdr">
         <div class="cat-ico" style="background:${cat.color}">${cat.icon}</div>
         <div style="flex:1"><div class="cat-name">${cat.name}</div><div class="cat-sub">${budget>0?'NS: '+fmt(budget):'Không giới hạn'}</div></div>
@@ -696,9 +711,85 @@ function changeMonth(dir){
   renderHome();
 }
 
+// ── CAT HISTORY MODAL ────────────────────────────────────────────────────────
+function openCatHistory(catId){
+  const cat=catById(catId);
+  const txList=txInMonth(curM,curY);
+  const catTxs=txList.filter(t=>t.cat===catId).sort((a,b)=>{
+    const dc=b.date.localeCompare(a.date);
+    return dc!==0?dc:b.id-a.id;
+  });
+  const budget=getCatBudget(catId,curM,curY);
+  const spent=catTxs.reduce((s,t)=>s+t.amount,0);
+
+  document.getElementById('cathist-header').innerHTML=`
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div class="cat-ico" style="background:${cat.color};width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;">${cat.icon}</div>
+      <div>
+        <div style="font-size:16px;font-weight:700;">${cat.name}</div>
+        <div style="font-size:12px;color:var(--text2);">Tháng ${curM+1}/${curY}</div>
+      </div>
+      <div style="margin-left:auto;text-align:right;">
+        <div style="font-size:15px;font-weight:700;color:var(--red);">${fmt(spent)}</div>
+        <div style="font-size:11px;color:var(--text2);">${budget>0?'NS: '+fmt(budget):'Không giới hạn'}</div>
+      </div>
+    </div>
+  `;
+
+  if(!catTxs.length){
+    document.getElementById('cathist-list').innerHTML=`<div class="empty" style="padding:32px 0;"><p>Chưa có giao dịch nào trong tháng này</p></div>`;
+  } else {
+    // Group by date
+    const dateOrder=[];const groups={};
+    catTxs.forEach(t=>{
+      if(!groups[t.date]){groups[t.date]=[];dateOrder.push(t.date);}
+      groups[t.date].push(t);
+    });
+    document.getElementById('cathist-list').innerHTML=dateOrder.map(date=>{
+      const txs=groups[date];
+      const d=new Date(date);
+      const lbl=`${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()}`;
+      const dayTotal=txs.reduce((s,t)=>s+t.amount,0);
+      return `<div>
+        <div class="day-lbl"><span>${lbl}</span><span style="color:var(--red)">${fmt(dayTotal)}</span></div>
+        ${txs.map(t=>{
+          const w=walletById(t.wallet);
+          return `<div class="tx-item" style="margin-bottom:6px;">
+            <div class="tx-info">
+              <div class="tx-name">${t.name}</div>
+              <div class="tx-meta">
+                <span class="wpill">${w.icon} ${w.name}</span>
+                ${t.note?`<span style="color:var(--text3);font-size:11px;">${t.note}</span>`:''}
+              </div>
+            </div>
+            <div class="tx-amt">-${fmt(t.amount)}</div>
+          </div>`;
+        }).join('')}
+      </div>`;
+    }).join('');
+  }
+  document.getElementById('m-cathist').classList.add('open');
+}
+
 // ── MODALS ────────────────────────────────────────────────────────────────────
 function closeAll(){document.querySelectorAll('.overlay').forEach(o=>o.classList.remove('open'));}
 document.querySelectorAll('.overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)closeAll();}));
+
+// Format amount inputs with dots while typing
+function fmtInput(el){
+  const raw=el.value.replace(/\D/g,'');
+  el.value=raw?Number(raw).toLocaleString('vi-VN'):'';
+}
+function getRaw(id){ return parseInt(document.getElementById(id).value.replace(/\D/g,'')||'0'); }
+function attachAmtInput(id){
+  const el=document.getElementById(id);
+  el.setAttribute('type','text');
+  el.setAttribute('inputmode','numeric');
+  el.addEventListener('input',()=>fmtInput(el));
+}
+document.addEventListener('DOMContentLoaded',()=>{
+  ['tx-amount','etx-amount','nc-budget','nc-daily','ec-budget','ec-daily','budget-val'].forEach(id=>attachAmtInput(id));
+});
 
 // Add transaction
 function buildWalletBtns(){
@@ -723,7 +814,7 @@ function openAddModal(){
 }
 function saveTx(){
   const name=document.getElementById('tx-name').value.trim();
-  const amount=parseInt(document.getElementById('tx-amount').value);
+  const amount=getRaw('tx-amount');
   const cat=document.getElementById('tx-cat').value;
   const date=document.getElementById('tx-date').value;
   const note=document.getElementById('tx-note').value.trim();
@@ -744,7 +835,7 @@ function openEditTxModal(id){
   if(!t) return;
   document.getElementById('etx-id').value=id;
   document.getElementById('etx-name').value=t.name;
-  document.getElementById('etx-amount').value=t.amount;
+  document.getElementById('etx-amount').value=t.amount?Number(t.amount).toLocaleString('vi-VN'):'';
   document.getElementById('etx-cat').innerHTML=cats.map(c=>`<option value="${c.id}"${c.id===t.cat?' selected':''}>${c.icon} ${c.name}</option>`).join('');
   document.getElementById('etx-date').value=t.date;
   document.getElementById('etx-note').value=t.note||'';
@@ -764,7 +855,7 @@ function saveEditTx(){
   const t=transactions.find(x=>x.id===id);
   if(!t) return;
   const name=document.getElementById('etx-name').value.trim();
-  const amount=parseInt(document.getElementById('etx-amount').value);
+  const amount=getRaw('etx-amount');
   const cat=document.getElementById('etx-cat').value;
   const date=document.getElementById('etx-date').value;
   const note=document.getElementById('etx-note').value.trim();
@@ -793,11 +884,11 @@ function markDebtDone(id){const d=debts.find(x=>x.id===id);if(!d)return;d.paid=d
 // Total budget
 function openBudgetModal(){
   document.getElementById('m-budget-title').textContent=`Ngân sách tháng ${curM+1}/${curY}`;
-  document.getElementById('budget-val').value=getTotalBudget(curM,curY);
+  document.getElementById('budget-val').value=getTotalBudget(curM,curY)?Number(getTotalBudget(curM,curY)).toLocaleString('vi-VN'):'';
   document.getElementById('m-budget').classList.add('open');
 }
 function saveTotalBudget(){
-  const v=parseInt(document.getElementById('budget-val').value)||0;
+  const v=getRaw('budget-val');
   setTotalBudget(curM,curY,v);closeAll();renderSettings();renderHome();
 }
 
@@ -809,8 +900,8 @@ function openEditCat(catId){
   document.getElementById('ec-month-label').textContent=`(T${curM+1}/${curY})`;
   document.getElementById('ec-name').value=cat.name;
   document.getElementById('ec-icon').value=cat.icon;
-  document.getElementById('ec-budget').value=getCatBudget(catId,curM,curY)||'';
-  document.getElementById('ec-daily').value=getCatDaily(catId,curM,curY)||'';
+  document.getElementById('ec-budget').value=getCatBudget(catId,curM,curY)?Number(getCatBudget(catId,curM,curY)).toLocaleString('vi-VN'):'';
+  document.getElementById('ec-daily').value=getCatDaily(catId,curM,curY)?Number(getCatDaily(catId,curM,curY)).toLocaleString('vi-VN'):'';
   document.getElementById('m-editcat').classList.add('open');
 }
 function saveEditCat(){
@@ -818,8 +909,8 @@ function saveEditCat(){
   const cat=cats.find(c=>c.id===catId);if(!cat)return;
   const name=document.getElementById('ec-name').value.trim();
   const icon=document.getElementById('ec-icon').value.trim();
-  const budget=parseInt(document.getElementById('ec-budget').value)||0;
-  const daily=parseInt(document.getElementById('ec-daily').value)||null;
+  const budget=getRaw('ec-budget');
+  const daily=getRaw('ec-daily')||null;
   if(name) cat.name=name;
   if(icon) cat.icon=icon;
   // Update global default too
@@ -833,14 +924,15 @@ function saveEditCat(){
 
 // Add cat
 function openAddCatModal(){
+  closeAll();
   ['nc-name','nc-icon','nc-budget','nc-daily'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('m-addcat').classList.add('open');
 }
 function saveNewCat(){
   const name=document.getElementById('nc-name').value.trim();
   const icon=document.getElementById('nc-icon').value.trim()||'📌';
-  const budget=parseInt(document.getElementById('nc-budget').value)||0;
-  const daily=parseInt(document.getElementById('nc-daily').value)||null;
+  const budget=getRaw('nc-budget');
+  const daily=getRaw('nc-daily')||null;
   if(!name){alert('Vui lòng nhập tên danh mục.');return;}
   const id='c'+Date.now();
   const color=CAT_COLORS[cats.length%CAT_COLORS.length];
