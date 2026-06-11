@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Chi Tiêu">
@@ -642,7 +642,7 @@ function getWalletBalance(wid){
     return s + (a.type==='add' ? a.amount : -a.amount);
   }, 0);
   const spent  = transactions.filter(t=>t.wallet===wid && (t.type==='expense'||t.type==='transfer_out'||!t.type)).reduce((s,t)=>s+t.amount, 0);
-  const earned = transactions.filter(t=>t.wallet===wid && t.type==='income').reduce((s,t)=>s+t.amount, 0);
+  const earned = transactions.filter(t=>t.wallet===wid && (t.type==='income'||t.type==='transfer_in')).reduce((s,t)=>s+t.amount, 0);
   return init + adjSum + earned - spent;
 }
 // monthBudgets[key] = { total, cats:{catId:budget,...}, daily:{catId:daily,...} }
@@ -704,7 +704,7 @@ function setCatOverride(catId,m,y,budget,daily){
 
 // ── DATA HELPERS ──────────────────────────────────────────────────────────────
 function txInMonth(m,y){ return transactions.filter(t=>{const d=new Date(t.date);return d.getMonth()===m&&d.getFullYear()===y;}); }
-function catSpent(catId,txList){ return txList.filter(t=>t.cat===catId&&t.type!=='income').reduce((s,t)=>s+t.amount,0); }
+function catSpent(catId,txList){ return txList.filter(t=>(t.cat===catId)&&(t.type==='expense'||!t.type)).reduce((s,t)=>s+t.amount,0); }
 function getCarry(catId,m,y){
   const daily=getCatDaily(catId,m,y);
   if(!daily) return null;
@@ -725,7 +725,7 @@ function renderHome(){
   const today=new Date();
   document.getElementById('today-date').textContent=`${today.getDate()}/${today.getMonth()+1}/${today.getFullYear()}`;
   const txList=txInMonth(curM,curY);
-  const totalSpent=txList.filter(t=>t.type!=='income').reduce((s,t)=>s+t.amount,0);
+  const totalSpent=txList.filter(t=>t.type==='expense'||!t.type).reduce((s,t)=>s+t.amount,0);
   const totalIncome=txList.filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0);
   const totalBudget=getTotalBudget(curM,curY);
   const remain=totalBudget-totalSpent;
@@ -822,21 +822,29 @@ function renderHistory(){
     const txs=groups[date];
     const d=new Date(date);
     const lbl=`${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()}`;
-    const daySpent=txs.filter(t=>t.type!=='income').reduce((s,t)=>s+t.amount,0);
+    const daySpent=txs.filter(t=>t.type==='expense'||!t.type).reduce((s,t)=>s+t.amount,0);
     const dayIncome=txs.filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0);
-    const dayNet = dayIncome - daySpent;
+    const dayTransfer=txs.filter(t=>t.type==='transfer_out').reduce((s,t)=>s+t.amount,0);
     return `<div>
       <div class="day-lbl">
         <span>${lbl}</span>
         <span style="display:flex;gap:8px;align-items:center;">
           ${dayIncome>0?`<span style="color:var(--teal)">+${fmt(dayIncome)}</span>`:''}
+          ${dayTransfer>0?`<span style="color:var(--blue)">↔${fmt(dayTransfer)}</span>`:''}
           ${daySpent>0?`<span style="color:var(--red)">-${fmt(daySpent)}</span>`:''}
         </span>
       </div>
       ${txs.map(t=>{
-        const isIncome = t.type==='income';
-        const cat = isIncome ? (INCOME_CATS[t.cat]||{name:'Thu nhập',icon:'📥'}) : catById(t.cat);
-        const catColor = isIncome ? '#E1F5EE' : catById(t.cat).color;
+        const isIncome    = t.type==='income';
+        const isTransferIn  = t.type==='transfer_in';
+        const isTransferOut = t.type==='transfer_out';
+        const isCredit = isIncome || isTransferIn;
+        const cat = isIncome ? (INCOME_CATS[t.cat]||{name:'Thu nhập',icon:'📥'}) 
+                  : (isTransferIn||isTransferOut) ? {name:'Chuyển ví', icon:'↔️'}
+                  : catById(t.cat);
+        const catColor = isIncome ? '#E1F5EE' 
+                       : (isTransferIn||isTransferOut) ? 'var(--blue-light)'
+                       : catById(t.cat).color;
         const w=walletById(t.wallet);
         return `<div class="tx-wrap" id="wrap-${t.id}">
           <div class="tx-actions">
@@ -850,11 +858,12 @@ function renderHistory(){
               <div class="tx-meta">
                 <span>${cat.name}</span>
                 ${isIncome?`<span class="wpill" style="background:var(--teal-light);color:var(--teal-dark);">Thu nhập</span>`:''}
+                ${(isTransferIn||isTransferOut)?`<span class="wpill" style="background:var(--blue-light);color:var(--blue);">Chuyển ví</span>`:''}
                 <span class="wpill">${w.icon} ${w.name}</span>
                 ${t.note?`<span style="color:var(--text3);font-size:11px;">${t.note}</span>`:''}
               </div>
             </div>
-            <div class="tx-amt" style="${isIncome?'color:var(--teal)':''}">${isIncome?'+':'-'}${fmt(t.amount)}</div>
+            <div class="tx-amt" style="${isCredit?'color:var(--teal)':isTransferOut?'color:var(--blue)':''}">${isCredit?'+':isTransferOut?'↔':'-'}${fmt(t.amount)}</div>
           </div>
         </div>`;
       }).join('')}
@@ -951,7 +960,7 @@ function renderStats(){
   const lbl=document.getElementById('stats-month-label');
   if(lbl) lbl.textContent=`${MONTHS_VI[statsM]}, ${statsY}`;
   const txList=txInMonth(statsM,statsY);
-  const expTxs=txList.filter(t=>t.type!=='income');
+  const expTxs=txList.filter(t=>t.type==='expense'||!t.type);
   const incTxs=txList.filter(t=>t.type==='income');
   const totalExp=expTxs.reduce((s,t)=>s+t.amount,0);
   const totalInc=incTxs.reduce((s,t)=>s+t.amount,0);
@@ -1115,7 +1124,7 @@ function renderSettings(){
 function openCatDetail(catId){
   const cat=catById(catId);
   const txList=txInMonth(curM,curY);
-  const catTxs=txList.filter(t=>t.cat===catId&&t.type!=='income').sort((a,b)=>b.date.localeCompare(a.date)||b.id-a.id);
+  const catTxs=txList.filter(t=>(t.cat===catId)&&(t.type==='expense'||!t.type)).sort((a,b)=>b.date.localeCompare(a.date)||b.id-a.id);
   const budget=getCatBudget(catId,curM,curY);
   const spent=catTxs.reduce((s,t)=>s+t.amount,0);
   const subcats=cat.subcats||[];
@@ -1448,7 +1457,7 @@ function saveTx(){
     if(selTransferFrom===selTransferTo){alert('Ví nguồn và ví đích không được giống nhau.');return;}
     const ts=Date.now();
     transactions.push({id:ts,   name:`Chuyển sang ${walletById(selTransferTo).name}${tnote?' · '+tnote:''}`,  amount:tamount,cat:'other',wallet:selTransferFrom,date:tdate,note:tnote,type:'transfer_out'});
-    transactions.push({id:ts+1, name:`Nhận từ ${walletById(selTransferFrom).name}${tnote?' · '+tnote:''}`,    amount:tamount,cat:'other',wallet:selTransferTo,  date:tdate,note:tnote,type:'income'});
+    transactions.push({id:ts+1, name:`Nhận từ ${walletById(selTransferFrom).name}${tnote?' · '+tnote:''}`,    amount:tamount,cat:'other',wallet:selTransferTo,  date:tdate,note:tnote,type:'transfer_in'});
     SS('txs3',transactions);closeAll();renderCurrent();
     return;
   }
