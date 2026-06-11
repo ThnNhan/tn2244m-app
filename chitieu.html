@@ -6,6 +6,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Chi Tiêu">
+<meta name="theme-color" content="#ffffff">
+<style>html,body{margin:0;padding:0;}</style>
 <title>Chi Tiêu</title>
 <style>
 :root{
@@ -23,11 +25,11 @@
   --teal-light:#04342C;--red-light:#4A1B0C;--amber-light:#412402;--blue-light:#042C53;
 }}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
-html,body{height:100%;height:100dvh;}
+html{height:100%;height:-webkit-fill-available;}body{height:100%;height:-webkit-fill-available;height:100dvh;overflow:hidden;}
 body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',sans-serif;background:var(--bg);color:var(--text);max-width:430px;margin:0 auto;display:flex;flex-direction:column;overflow:hidden;}
 button{font-family:inherit;cursor:pointer;}
-#app-scroll{position:fixed;top:0;left:0;right:0;bottom:0;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;padding-top:env(safe-area-inset-top);padding-bottom:calc(56px + env(safe-area-inset-bottom) + 16px);max-width:430px;margin:0 auto;}
-.bottom-nav{position:fixed;bottom:0;left:0;right:0;width:100%;max-width:430px;margin:0 auto;background:var(--surface);border-top:1px solid var(--border);display:flex;z-index:100;padding-bottom:env(safe-area-inset-bottom);}
+#app-scroll{position:fixed;top:0;left:0;right:0;bottom:0;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;padding-top:env(safe-area-inset-top);padding-bottom:calc(60px + env(safe-area-inset-bottom));max-width:430px;margin:0 auto;}
+.bottom-nav{position:fixed;bottom:0;bottom:env(safe-area-inset-bottom, 0);left:0;right:0;width:100%;max-width:430px;margin:0 auto;background:var(--surface);border-top:1px solid var(--border);display:flex;z-index:100;padding-bottom:env(safe-area-inset-bottom);margin-bottom:0;}
 .nav-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:10px 0 8px;background:none;border:none;color:var(--text3);font-size:10px;font-weight:500;}
 .nav-item.active{color:var(--teal);}
 .nav-item svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
@@ -95,7 +97,7 @@ button{font-family:inherit;cursor:pointer;}
 /* stats */
 .stats-wrap{padding:14px 16px;}
 .pie-card{background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);padding:16px;margin-bottom:14px;}
-canvas#pieChart{display:block;margin:0 auto;}
+
 .legend{display:flex;flex-direction:column;gap:8px;margin-top:14px;}
 .leg-item{display:flex;align-items:center;justify-content:space-between;}
 .leg-l{display:flex;align-items:center;gap:8px;}
@@ -206,14 +208,15 @@ canvas#pieChart{display:block;margin:0 auto;}
 
 <!-- STATS -->
 <div class="page" id="page-stats">
-  <div class="ph"><h1>Thống kê</h1></div>
-  <div class="stats-wrap">
-    <div class="pie-card">
-      <div style="font-size:13px;font-weight:600;color:var(--text2);margin-bottom:12px;">Chi tiêu theo danh mục</div>
-      <canvas id="pieChart" width="200" height="200"></canvas>
-      <div class="legend" id="pie-legend"></div>
+  <div class="ph">
+    <h1>Thống kê</h1>
+    <div class="month-nav" style="margin-top:8px;">
+      <button onclick="changeStatsMonth(-1)">‹</button>
+      <span id="stats-month-label"></span>
+      <button onclick="changeStatsMonth(1)">›</button>
     </div>
   </div>
+  <div class="stats-wrap" id="stats-wrap"></div>
 </div>
 
 <!-- SETTINGS -->
@@ -912,22 +915,88 @@ function renderDebt(){
 }
 
 // ── RENDER STATS ──────────────────────────────────────────────────────────────
-function renderStats(){
-  const txList=txInMonth(curM,curY);
-  const data=cats.map((c,i)=>({name:c.name,icon:c.icon,spent:catSpent(c.id,txList),color:PIE_COLORS[i%PIE_COLORS.length]})).filter(d=>d.spent>0);
-  const total=data.reduce((s,d)=>s+d.spent,0);
-  const canvas=document.getElementById('pieChart');
-  const ctx=canvas.getContext('2d');
-  ctx.clearRect(0,0,200,200);
-  if(!data.length){document.getElementById('pie-legend').innerHTML=`<p style="color:var(--text3);font-size:13px;text-align:center;">Chưa có dữ liệu tháng này</p>`;return;}
-  let angle=-Math.PI/2;
-  data.forEach(d=>{const sl=(d.spent/total)*2*Math.PI;ctx.beginPath();ctx.moveTo(100,100);ctx.arc(100,100,90,angle,angle+sl);ctx.closePath();ctx.fillStyle=d.color;ctx.fill();angle+=sl;});
-  ctx.beginPath();ctx.arc(100,100,50,0,2*Math.PI);ctx.fillStyle=getComputedStyle(document.documentElement).getPropertyValue('--surface')||'#fff';ctx.fill();
-  document.getElementById('pie-legend').innerHTML=data.map(d=>`
+let statsM=new Date().getMonth(), statsY=new Date().getFullYear();
+function changeStatsMonth(dir){
+  statsM+=dir;
+  if(statsM>11){statsM=0;statsY++;}
+  if(statsM<0){statsM=11;statsY--;}
+  renderStats();
+}
+
+function makePie(data,total){
+  if(!data.length) return '<p style="color:var(--text3);font-size:13px;text-align:center;padding:24px 0;">Không có dữ liệu</p>';
+  const cx=100,cy=100,r=88,ri=52;
+  let angle=-Math.PI/2, paths='';
+  data.forEach(d=>{
+    const sl=(d.amt/total)*2*Math.PI;
+    if(sl<0.01){angle+=sl;return;}
+    const x1=cx+r*Math.cos(angle),y1=cy+r*Math.sin(angle);
+    const x2=cx+r*Math.cos(angle+sl),y2=cy+r*Math.sin(angle+sl);
+    const xi1=cx+ri*Math.cos(angle),yi1=cy+ri*Math.sin(angle);
+    const xi2=cx+ri*Math.cos(angle+sl),yi2=cy+ri*Math.sin(angle+sl);
+    const large=sl>Math.PI?1:0;
+    paths+=`<path d="M${xi1},${yi1} L${x1},${y1} A${r},${r} 0 ${large},1 ${x2},${y2} L${xi2},${yi2} A${ri},${ri} 0 ${large},0 ${xi1},${yi1} Z" fill="${d.color}"/>`;
+    angle+=sl;
+  });
+  const legend=data.map(d=>`
     <div class="leg-item">
       <div class="leg-l"><div class="leg-dot" style="background:${d.color}"></div><span style="font-size:13px;">${d.icon} ${d.name}</span></div>
-      <div style="display:flex;gap:12px;align-items:center;"><span style="font-size:13px;color:var(--text2);">${Math.round((d.spent/total)*100)}%</span><span style="font-size:13px;font-weight:600;">${fmt(d.spent)}</span></div>
+      <div style="display:flex;gap:12px;align-items:center;"><span style="font-size:13px;color:var(--text2);">${Math.round((d.amt/total)*100)}%</span><span style="font-size:13px;font-weight:600;">${fmt(d.amt)}</span></div>
     </div>`).join('');
+  return `<div style="width:200px;height:200px;margin:0 auto;"><svg viewBox="0 0 200 200" width="200" height="200" xmlns="http://www.w3.org/2000/svg">${paths}</svg></div><div class="legend">${legend}</div>`;
+}
+
+function renderStats(){
+  const MONTHS_VI=['Tháng 1','Tháng 2','Tháng 3','Tháng 4','Tháng 5','Tháng 6','Tháng 7','Tháng 8','Tháng 9','Tháng 10','Tháng 11','Tháng 12'];
+  const lbl=document.getElementById('stats-month-label');
+  if(lbl) lbl.textContent=`${MONTHS_VI[statsM]}, ${statsY}`;
+  const txList=txInMonth(statsM,statsY);
+  const expTxs=txList.filter(t=>t.type!=='income');
+  const incTxs=txList.filter(t=>t.type==='income');
+  const totalExp=expTxs.reduce((s,t)=>s+t.amount,0);
+  const totalInc=incTxs.reduce((s,t)=>s+t.amount,0);
+  const balance=totalInc-totalExp;
+
+  // Expense by category
+  const expData=cats.map((c,i)=>({name:c.name,icon:c.icon,amt:catSpent(c.id,txList),color:PIE_COLORS[i%PIE_COLORS.length]})).filter(d=>d.amt>0);
+
+  // Income by type
+  const INCOME_CATS={salary:{name:'Lương',icon:'💼'},bonus:{name:'Thưởng',icon:'🎁'},freelance:{name:'Freelance',icon:'💻'},other_income:{name:'Thu nhập khác',icon:'📥'}};
+  const incMap={};
+  incTxs.forEach(t=>{const k=t.cat||'other_income';incMap[k]=(incMap[k]||0)+t.amount;});
+  const incColors=['#1D9E75','#0F6E56','#5DCAA5','#9FE1CB'];
+  const incData=Object.entries(incMap).map(([k,amt],i)=>({name:(INCOME_CATS[k]||{name:k}).name,icon:(INCOME_CATS[k]||{icon:'📥'}).icon,amt,color:incColors[i%incColors.length]}));
+
+  const wrap=document.getElementById('stats-wrap');
+  wrap.innerHTML=`
+    <!-- Summary row -->
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:14px 16px 0;">
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:10px 10px 8px;text-align:center;">
+        <div style="font-size:9px;font-weight:600;color:var(--text3);letter-spacing:.4px;text-transform:uppercase;margin-bottom:4px;">Thu</div>
+        <div style="font-size:13px;font-weight:700;color:var(--teal);">${fmt(totalInc)}</div>
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:10px 10px 8px;text-align:center;">
+        <div style="font-size:9px;font-weight:600;color:var(--text3);letter-spacing:.4px;text-transform:uppercase;margin-bottom:4px;">Chi</div>
+        <div style="font-size:13px;font-weight:700;color:var(--red);">${fmt(totalExp)}</div>
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:10px 10px 8px;text-align:center;">
+        <div style="font-size:9px;font-weight:600;color:var(--text3);letter-spacing:.4px;text-transform:uppercase;margin-bottom:4px;">Còn lại</div>
+        <div style="font-size:13px;font-weight:700;color:${balance>=0?'var(--teal)':'var(--red)'};">${fmt(Math.abs(balance))}</div>
+      </div>
+    </div>
+
+    <!-- Chi tiêu theo danh mục -->
+    <div class="pie-card" style="margin:14px 16px 0;">
+      <div style="font-size:13px;font-weight:600;color:var(--text2);margin-bottom:12px;">💸 Chi tiêu theo danh mục</div>
+      ${makePie(expData,totalExp)}
+    </div>
+
+    <!-- Thu nhập theo loại -->
+    <div class="pie-card" style="margin:12px 16px 14px;">
+      <div style="font-size:13px;font-weight:600;color:var(--text2);margin-bottom:12px;">💰 Thu nhập theo loại</div>
+      ${makePie(incData,totalInc)}
+    </div>
+  `;
 }
 
 // ── RENDER SETTINGS ───────────────────────────────────────────────────────────
