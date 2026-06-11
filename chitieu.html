@@ -122,7 +122,7 @@ button{font-family:inherit;cursor:pointer;}
 .modal h2{font-size:17px;font-weight:600;margin-bottom:16px;}
 .fr{margin-bottom:14px;}
 .fr label{font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:.4px;}
-.fr input,.fr select,.fr textarea{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;font-size:15px;color:var(--text);font-family:inherit;outline:none;}
+.fr input,.fr select,.fr textarea{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;font-size:16px;color:var(--text);font-family:inherit;outline:none;}
 .fr input:focus,.fr select:focus{border-color:var(--teal);}
 .hint{font-size:12px;color:var(--text3);margin-top:4px;}
 .wsel{display:flex;gap:8px;flex-wrap:wrap;}
@@ -379,13 +379,13 @@ button{font-family:inherit;cursor:pointer;}
     <div class="fr">
       <label>Chọn tháng / năm</label>
       <div style="display:flex;gap:8px;">
-        <select id="budget-month" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;font-size:15px;color:var(--text);font-family:inherit;outline:none;">
+        <select id="budget-month" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;font-size:16px;color:var(--text);font-family:inherit;outline:none;">
           <option value="0">Tháng 1</option><option value="1">Tháng 2</option><option value="2">Tháng 3</option>
           <option value="3">Tháng 4</option><option value="4">Tháng 5</option><option value="5">Tháng 6</option>
           <option value="6">Tháng 7</option><option value="7">Tháng 8</option><option value="8">Tháng 9</option>
           <option value="9">Tháng 10</option><option value="10">Tháng 11</option><option value="11">Tháng 12</option>
         </select>
-        <input type="number" id="budget-year" style="width:90px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;font-size:15px;color:var(--text);font-family:inherit;outline:none;" min="2020" max="2099"/>
+        <input type="number" id="budget-year" style="width:90px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;font-size:16px;color:var(--text);font-family:inherit;outline:none;" min="2020" max="2099"/>
       </div>
     </div>
     <div class="fr">
@@ -409,13 +409,13 @@ button{font-family:inherit;cursor:pointer;}
     <div class="fr">
       <label>Áp dụng ngân sách cho tháng</label>
       <div style="display:flex;gap:8px;">
-        <select id="ec-month" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;font-size:15px;color:var(--text);font-family:inherit;outline:none;">
+        <select id="ec-month" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;font-size:16px;color:var(--text);font-family:inherit;outline:none;">
           <option value="0">Tháng 1</option><option value="1">Tháng 2</option><option value="2">Tháng 3</option>
           <option value="3">Tháng 4</option><option value="4">Tháng 5</option><option value="5">Tháng 6</option>
           <option value="6">Tháng 7</option><option value="7">Tháng 8</option><option value="8">Tháng 9</option>
           <option value="9">Tháng 10</option><option value="10">Tháng 11</option><option value="11">Tháng 12</option>
         </select>
-        <input type="number" id="ec-year" style="width:90px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;font-size:15px;color:var(--text);font-family:inherit;outline:none;" min="2020" max="2099"/>
+        <input type="number" id="ec-year" style="width:90px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;font-size:16px;color:var(--text);font-family:inherit;outline:none;" min="2020" max="2099"/>
       </div>
       <p class="hint" style="margin-top:6px;">Thay đổi tên/icon áp dụng toàn bộ. Ngân sách chỉ áp dụng tháng được chọn.</p>
     </div>
@@ -1230,13 +1230,13 @@ function saveSubCat(){
   } else {
     cat.subcats.push({id:'sc_'+Date.now(),name,icon,budget});
   }
-  SS('cats3',cats);closeAll();renderSettings();renderHome();
+  SS('cats3',cats);closeAll();renderCurrent();
 }
 function deleteSubCat(catId,scId){
   if(!confirm('Xoá quỹ này? Giao dịch thuộc quỹ vẫn giữ nguyên.'))return;
   const cat=cats.find(c=>c.id===catId);if(!cat)return;
   cat.subcats=(cat.subcats||[]).filter(s=>s.id!==scId);
-  SS('cats3',cats);renderSettings();renderHome();
+  SS('cats3',cats);renderCurrent();
 }
 function switchPage(id,btn){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
@@ -1449,7 +1449,7 @@ function saveTx(){
     const ts=Date.now();
     transactions.push({id:ts,   name:`Chuyển sang ${walletById(selTransferTo).name}${tnote?' · '+tnote:''}`,  amount:tamount,cat:'other',wallet:selTransferFrom,date:tdate,note:tnote,type:'transfer_out'});
     transactions.push({id:ts+1, name:`Nhận từ ${walletById(selTransferFrom).name}${tnote?' · '+tnote:''}`,    amount:tamount,cat:'other',wallet:selTransferTo,  date:tdate,note:tnote,type:'income'});
-    SS('txs3',transactions);closeAll();renderHome();
+    SS('txs3',transactions);closeAll();renderCurrent();
     return;
   }
   if(!name||!amount||!date){alert('Vui lòng điền đầy đủ tên, số tiền và ngày.');return;}
@@ -1461,13 +1461,13 @@ function saveTx(){
     const subcat=document.getElementById('tx-subcat')?.value||'';
     transactions.push({id:Date.now(),name,amount,cat,subcat:subcat||undefined,wallet:selWallet,date,note,type:'expense'});
   }
-  SS('txs3',transactions);closeAll();renderHome();
+  SS('txs3',transactions);closeAll();renderCurrent();
 }
 
 function deleteTx(id){
   if(!confirm('Xoá giao dịch này?')) return;
   transactions=transactions.filter(t=>t.id!==id);
-  SS('txs3',transactions);renderHistory();renderHome();
+  SS('txs3',transactions);renderCurrent();
 }
 
 let selWalletEdit='';
@@ -1502,7 +1502,7 @@ function saveEditTx(){
   const note=document.getElementById('etx-note').value.trim();
   if(!name||!amount||!date){alert('Vui lòng điền đầy đủ tên, số tiền và ngày.');return;}
   t.name=name;t.amount=amount;t.cat=cat;t.wallet=selWalletEdit;t.date=date;t.note=note;
-  SS('txs3',transactions);closeAll();renderHistory();renderHome();
+  SS('txs3',transactions);closeAll();renderCurrent();
 }
 
 // ── DEBT FUNCTIONS ────────────────────────────────────────────────────────────
@@ -1543,7 +1543,7 @@ function saveDebt(){
   } else {
     debts.push({id:Date.now(),person,type,total,paid:0,note,date,payments:[]});
   }
-  SS('debts3',debts);closeAll();renderDebt();
+  SS('debts3',debts);closeAll();renderCurrent();
 }
 
 function openPayDebt(id){
@@ -1577,7 +1577,7 @@ function savePayDebt(payAll){
   if(!d.payments) d.payments=[];
   d.payments.push({id:Date.now(),amount,date,note});
   d.paid=Math.min(d.total, d.paid+amount);
-  SS('debts3',debts);closeAll();renderDebt();
+  SS('debts3',debts);closeAll();renderCurrent();
 }
 
 // Total budget
@@ -1592,7 +1592,7 @@ function saveTotalBudget(){
   const y = parseInt(document.getElementById('budget-year').value);
   const v = getRaw('budget-val');
   if(!y||y<2020){alert('Năm không hợp lệ.');return;}
-  setTotalBudget(m,y,v);closeAll();renderSettings();renderHome();
+  setTotalBudget(m,y,v);closeAll();renderCurrent();
 }
 
 // Edit cat
@@ -1626,7 +1626,7 @@ function saveEditCat(){
   SS('cats3',cats);
   // Month-specific override for chosen month
   setCatOverride(catId,m,y,budget,daily);
-  closeAll();renderSettings();renderHome();
+  closeAll();renderCurrent();
 }
 
 // Add cat
@@ -1648,13 +1648,13 @@ function saveNewCat(){
   // a specific override will use this value.
   cats.push({id,name,icon,color,dailyBudget:daily,budget});
   SS('cats3',cats);
-  closeAll();renderSettings();renderHome();
+  closeAll();renderCurrent();
 }
 function deleteCat(catId){
   if(!confirm('Xoá danh mục? Giao dịch thuộc danh mục này sẽ chuyển sang "Khác".'))return;
   transactions=transactions.map(t=>t.cat===catId?{...t,cat:'other'}:t);
   cats=cats.filter(c=>c.id!==catId);
-  SS('cats3',cats);SS('txs3',transactions);renderSettings();renderHome();
+  SS('cats3',cats);SS('txs3',transactions);renderCurrent();
 }
 
 // Add wallet
@@ -1680,7 +1680,7 @@ function saveNewWallet(){
   const newId='w'+Date.now();
   wallets.push({id:newId,name,icon,color});
   // Don't set initial balance yet — prompt user from settings
-  SS('wallets3',wallets);closeAll();renderSettings();renderHome();
+  SS('wallets3',wallets);closeAll();renderCurrent();
 }
 // ── WALLET BALANCE MODALS ────────────────────────────────────────────────────
 let adjWalletId = '';
@@ -1755,7 +1755,7 @@ function saveAdj(){
   walletAdj.push({id:Date.now(), walletId:wid, type, amount, note, date});
   SS('walletAdj', walletAdj);
   openWalletBalModal(wid);
-  renderHome();
+  renderCurrent();
 }
 
 function deleteAdj(id){
@@ -1765,7 +1765,7 @@ function deleteAdj(id){
   walletAdj = walletAdj.filter(x=>x.id!==id);
   SS('walletAdj', walletAdj);
   if(wid) openWalletBalModal(wid);
-  renderHome();
+  renderCurrent();
 }
 
 function openInitBalModal(wid){
@@ -1784,14 +1784,14 @@ function saveInitBal(){
   walletInitBal[wid] = amount;
   SS('walletInitBal', walletInitBal);
   closeAll();
-  renderHome();
+  renderCurrent();
 }
 
 function deleteWallet(wid){
   if(wallets.length<=1){alert('Phải có ít nhất 1 ví.');return;}
   if(!confirm('Xoá ví này? Giao dịch thuộc ví này sẽ giữ nguyên nhưng ví sẽ không còn hiển thị.'))return;
   wallets=wallets.filter(w=>w.id!==wid);
-  SS('wallets3',wallets);renderSettings();
+  SS('wallets3',wallets);renderCurrent();
 }
 
 // ── SWIPE TO REVEAL ───────────────────────────────────────────────────────────
@@ -1855,6 +1855,18 @@ renderHistory = function(){
 };
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
+// Re-render whichever page is currently visible
+function renderCurrent(){
+  const active = document.querySelector('.page.active');
+  if(!active) return;
+  const id = active.id.replace('page-','');
+  if(id==='home')     renderHome();
+  if(id==='history')  renderHistory();
+  if(id==='debt')     renderDebt();
+  if(id==='stats')    renderStats();
+  if(id==='settings') renderSettings();
+}
+
 renderHome();
 </script>
 </body>
